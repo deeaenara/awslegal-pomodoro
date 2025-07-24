@@ -269,7 +269,55 @@ body.dark .coach-box {
   background: #222;
   color: #eee;
   border-color: #fff;
-}                                         
+}
+.quote-container {
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem;
+  background-color: #1f2c3d;
+}
+
+.quote-text {
+  display: inline-block;
+  padding-left: 100%;
+  animation: slideText 18s linear infinite;
+  font-style: italic;
+  color: #fff;
+  font-size: 1rem;
+}
+
+@keyframes slideText {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-100%); }
+}
+.quote-container {
+  position: relative;
+  background-color: #1f2c3d;
+  overflow: hidden;
+}
+
+.quote-container::before,
+.quote-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 4rem;
+  height: 100%;
+  z-index: 1;
+}
+
+.quote-container::before {
+  left: 0;
+  background: linear-gradient(to right, #1f2c3d, transparent);
+}
+
+.quote-container::after {
+  right: 0;
+  background: linear-gradient(to left, #1f2c3d, transparent);
+}
+                                               
   </style>
 </head>
   <script>
