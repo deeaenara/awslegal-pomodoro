@@ -300,7 +300,7 @@ body.dark .coach-box {
 </div>
   <header>
     <h1>TomʌɪDos 🍅</h1>
-    <p><i>AWS Legal Focus Tracker – Track. Win. Repeat.</i></p>
+    <p><i>Track. Win. Repeat.</i></p>
   </header>
 
   <div class="timer" id="timer">25:00</div>
@@ -313,16 +313,16 @@ body.dark .coach-box {
   <div class="task-list" id="taskList"></div>
 
   <div class="controls">
-    <button onclick="startTimer('work')">🍅 Start Focus</button>
-    <button onclick="startTimer('short')">🌿 Short Break</button>
-    <button onclick="startTimer('long')">🌴 Long Break</button>
+    <button onclick="startTimer('work')">Start Focus</button>
+    <button onclick="startTimer('short')">Short Break</button>
+    <button onclick="startTimer('long')">Long Break</button>
     <button onclick="resetTimer()">Reset</button>
-    <button onclick="exportLogs()">📂 Export Logs</button>
-    <button onclick="exportPDF()">📄 PDF Report</button>
+    <button onclick="exportLogs()">Export Logs</button>
+    <button onclick="exportPDF()">PDF Report</button>
   </div>
 
   <div class="log" id="log">
-    <h3>📜 Focus Logs</h3>
+    <h3>Focus Logs</h3>
   </div>
 
   <div class="calendar">
@@ -499,7 +499,7 @@ function showBadge() {
   if (streak >= 3) {
     const b = document.createElement('div');
     b.className = 'badge';
-    b.textContent = '💼 3-Streak Achiever';
+    b.textContent = '3-Streak Achiever';
     badgesEl.appendChild(b);
     playSound('badgeSound');
   }
