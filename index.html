@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TomʌɪDos – AWS Legal Pomodoro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-light: #fefefe;
+      --bg-dark: #121212;
+      --text-light: #202020;
+      --text-dark: #fefefe;
+      --accent: #4CAF50;
+      --badge: #ef476f;
+      --card-light: #fff;
+      --card-dark: #1e1e1e;
+    }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-light); color: var(--text-light);
+      transition: 0.3s ease all;
+    }
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+    header { background: #203040; color: white; padding: 2rem 1rem; text-align: center; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin: 0; }
+
+    .timer { text-align: center; font-size: 4rem; margin: 2rem 0; }
+
+    .controls, .task-input, .task-list, .footer-bar, .badge-shelf, .log, .calendar {
+      text-align: center; max-width: 700px; margin: 1rem auto;
+    }
+
+    .task-input input {
+      padding: 0.6rem; font-size: 1rem; width: 60%;
+    }
+    .task-input button { padding: 0.6rem 1rem; margin-left: 0.5rem; }
+
+    .task-item {
+      background: var(--card-light); padding: 0.6rem;
+      border-radius: 8px; margin: 0.4rem auto; cursor: pointer;
+      transition: 0.2s; font-size: 1rem;
+    }
+    .task-item.checked { text-decoration: line-through; background: #c8e6c9; }
+    body.dark .task-item { background: var(--card-dark); }
+
+    button {
+      padding: 0.8rem 1.2rem; border: none; border-radius: 8px;
+      font-size: 1rem; background: var(--accent); color: white; cursor: pointer;
+    }
+
+    .footer-bar {
+      position: sticky; bottom: 0; background: #ffffffcc;
+      display: flex; justify-content: space-between; padding: 0.5rem;
+      backdrop-filter: blur(4px);
+    }
+    body.dark .footer-bar { background: #1e1e1ecc; }
+
+    .theme-toggle, .volume-slider {
+      position: fixed; bottom: 1rem;
+    }
+    .theme-toggle { left: 1rem; font-size: 1.5rem; background: none; border: none; }
+    .volume-slider { right: 1rem; width: 120px; }
+
+    .badge-shelf { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+    .badge { background: var(--badge); color: white; padding: 0.5rem 1rem; border-radius: 10px; }
+
+    .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+    }
+    .calendar-cell {
+      background: #ddd; border-radius: 4px; aspect-ratio: 1/1;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .calendar-cell.active { background: var(--accent); color: white; }
+  </style>
+</head>
+<body>
+  <header><h1>TomʌɪDos – Legal Pomodoro</h1></header>
+  <div class="timer" id="timer">25:00</div>
+
+  <div class="task-input">
+    <input id="taskInput" placeholder="Enter your focus task..." />
+    <button onclick="addTask()">Add Task</button>
+  </div>
+
+  <div class="task-list" id="taskList"></div>
+
+  <div class="controls">
+    <button onclick="startTimer('work')">Start Work</button>
+    <button onclick="startTimer('short')">Short Break</button>
+    <button onclick="startTimer('long')">Long Break</button>
+    <button onclick="resetTimer()">Reset</button>
+    <button onclick="exportPDF()">Export PDF</button>
+  </div>
+
+  <div class="log" id="log"></div>
+  <div class="calendar calendar-grid" id="calendar"></div>
+  <div class="badge-shelf" id="badges"></div>
+
+  <div class="footer-bar">
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+    <input type="range" class="volume-slider" id="volumeControl" min="0" max="1" step="0.01" value="0.5">
+  </div>
+
+  <!-- Audio -->
+  <audio id="startSound" src="https://assets.mixkit.co/sfx/preview/mixkit-click-melodic-tone-1129.mp3"></audio>
+  <audio id="endSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bell-notification-933.mp3"></audio>
+  <audio id="checkSound" src="https://assets.mixkit.co/sfx/preview/mixkit-soft-click-1126.mp3"></audio>
+  <audio id="badgeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-notification-wave-896.mp3"></audio>
+
+  <script>
+    let timeLeft = 1500;
+    let timerInterval;
+    let streak = 0;
+    let volume = 0.5;
+
+    const timerEl = document.getElementById("timer");
+    const logEl = document.getElementById("log");
+    const badgesEl = document.getElementById("badges");
+    const volumeControl = document.getElementById("volumeControl");
+
+    function updateTimerDisplay() {
+      const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+      const secs = String(timeLeft % 60).padStart(2, '0');
+      timerEl.textContent = `${mins}:${secs}`;
+    }
+
+    function playSound(id) {
+      const audio = document.getElementById(id);
+      if (audio) {
+        audio.volume = volume;
+        audio.currentTime = 0;
+        audio.play();
+      }
+    }
+
+    function startTimer(type) {
+      clearInterval(timerInterval);
+      if (type === 'work') timeLeft = 25 * 60;
+      if (type === 'short') timeLeft = 5 * 60;
+      if (type === 'long') timeLeft = 15 * 60;
+      playSound("startSound");
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          logFocus(type);
+          playSound("endSound");
+        }
+      }, 1000);
+      updateTimerDisplay();
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 25 * 60;
+      updateTimerDisplay();
+    }
+
+    function addTask() {
+      const input = document.getElementById("taskInput");
+      const task = input.value.trim();
+      if (!task) return;
+      const div = document.createElement("div");
+      div.className = "task-item";
+      div.textContent = task;
+      div.onclick = () => {
+        div.classList.toggle("checked");
+        playSound("checkSound");
+      };
+      document.getElementById("taskList").appendChild(div);
+      input.value = '';
+    }
+
+    function logFocus(type) {
+      const entry = document.createElement("div");
+      entry.textContent = `${type.toUpperCase()} session complete.`;
+      logEl.appendChild(entry);
+      streak++;
+      updateBadges();
+    }
+
+    function updateBadges() {
+      badgesEl.innerHTML = '';
+      if (streak >= 3) {
+        badgesEl.innerHTML += `<div class="badge">Case Closer </div>`;
+        playSound("badgeSound");
+      }
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const logs = [...logEl.children].map(e => e.textContent).join('\n');
+      doc.text("TomʌɪDos Focus Report", 20, 20);
+      doc.text(logs || "No sessions yet.", 20, 40);
+      doc.save("focus_report.pdf");
+    }
+
+    volumeControl.addEventListener("input", (e) => {
+      volume = parseFloat(e.target.value);
+    });
+
+    updateTimerDisplay();
+  </script>
+</body>
+</html>
