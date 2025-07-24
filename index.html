@@ -355,10 +355,10 @@
     function updateTitles() {
       streak = streakDates.length;
       if (streak >= 10) {
-        title = 'Closing Counsel';
+        title = 'Grand Counsel';
         document.getElementById('badge3').style.display = 'inline-block';
       } else if (streak >= 5) {
-        title = 'Silent Assassin';
+        title = 'Associate Partner';
         document.getElementById('badge2').style.display = 'inline-block';
       } else {
         title = 'Novice';
@@ -398,6 +398,207 @@
 
     updateTitles();
     buildCalendar();
-  </script>
+    <!-- 🔊 Sound Elements -->
+<audio id="startSound" src="https://assets.mixkit.co/sfx/preview/mixkit-click-melodic-tone-1129.mp3"></audio>
+<audio id="endSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bell-notification-933.mp3"></audio>
+<audio id="checkSound" src="https://assets.mixkit.co/sfx/preview/mixkit-soft-click-1126.mp3"></audio>
+<audio id="badgeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-notification-wave-896.mp3"></audio>
+<audio id="themeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-239.mp3"></audio>
+
+<script>
+let timer = 1500;
+let interval;
+let mode = 'work';
+let streak = parseInt(localStorage.getItem('streak')) || 0;
+let tomato = parseInt(localStorage.getItem('tomato')) || 0;
+let volume = 0.5;
+let pomodoroCycle = 0;
+
+const timerEl = document.getElementById('timer');
+const volumeControl = document.getElementById('volumeControl');
+const logEl = document.getElementById('log');
+const calendarGrid = document.getElementById('calendarGrid');
+const badgesEl = document.getElementById('badges');
+const titleEl = document.getElementById('title');
+const tomatoCount = document.getElementById('tomatoCount');
+const streakCount = document.getElementById('streakCount');
+
+function updateDisplay() {
+  const m = Math.floor(timer / 60).toString().padStart(2, '0');
+  const s = (timer % 60).toString().padStart(2, '0');
+  timerEl.textContent = `${m}:${s}`;
+}
+
+function playSound(id) {
+  const audio = document.getElementById(id);
+  audio.volume = volume;
+  audio.currentTime = 0;
+  audio.play();
+}
+
+function startTimer(selected) {
+  clearInterval(interval);
+  mode = selected;
+  if (selected === 'work') timer = 1500;
+  if (selected === 'short') timer = 300;
+  if (selected === 'long') timer = 900;
+
+  playSound('startSound');
+  interval = setInterval(() => {
+    timer--;
+    updateDisplay();
+    if (timer <= 0) {
+      clearInterval(interval);
+      playSound('endSound');
+      completeSession();
+    }
+  }, 1000);
+  updateDisplay();
+}
+
+function completeSession() {
+  if (mode === 'work') {
+    tomato++;
+    pomodoroCycle++;
+    streak++;
+    localStorage.setItem('streak', streak);
+    localStorage.setItem('tomato', tomato);
+    streakCount.textContent = streak;
+    tomatoCount.textContent = tomato;
+    showBadge();
+    updateCalendar();
+    logEntry("🍅 Pomodoro Complete");
+    if (pomodoroCycle % 4 === 0) startTimer('long');
+    else startTimer('short');
+  } else {
+    logEntry("Break Complete");
+  }
+}
+
+function resetTimer() {
+  clearInterval(interval);
+  timer = 1500;
+  updateDisplay();
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  playSound('themeSound');
+}
+
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const task = input.value.trim();
+  if (!task) return;
+  const div = document.createElement('div');
+  div.className = 'task-item';
+  div.textContent = task;
+  div.onclick = () => {
+    div.classList.toggle('checked');
+    playSound('checkSound');
+  };
+  document.getElementById('taskList').appendChild(div);
+  input.value = '';
+}
+
+function logEntry(text) {
+  const el = document.createElement('div');
+  el.textContent = `🕒 ${new Date().toLocaleTimeString()} – ${text}`;
+  logEl.appendChild(el);
+}
+
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+  doc.text("TomʌɪDos 🍅 Focus Report", 20, y);
+  [...logEl.children].forEach(child => {
+    y += 10;
+    doc.text(child.textContent, 20, y);
+  });
+  doc.save("TomʌɪDos_Report.pdf");
+}
+
+function exportLogs() {
+  const data = [...logEl.children].map(div => div.textContent).join("\n");
+  const blob = new Blob([data], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "TomʌɪDos_Logs.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function updateCalendar() {
+  const day = new Date().getDay();
+  const cells = document.querySelectorAll('.calendar-cell');
+  cells.forEach((c, i) => {
+    c.classList.toggle('active', i === day);
+  });
+}
+
+function renderCalendar() {
+  for (let i = 0; i < 7; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-cell';
+    calendarGrid.appendChild(cell);
+  }
+  updateCalendar();
+}
+
+function showBadge() {
+  badgesEl.innerHTML = '';
+  if (tomato >= 10) titleEl.textContent = '🎖️ Grand Counsel';
+  else if (tomato >= 5) titleEl.textContent = '🎖️ Associate Partner';
+  else titleEl.textContent = '🎖️ Novice';
+
+  if (streak >= 3) {
+    const b = document.createElement('div');
+    b.className = 'badge';
+    b.textContent = '3-Streak Achiever';
+    badgesEl.appendChild(b);
+    playSound('badgeSound');
+  }
+}
+
+volumeControl.addEventListener('input', e => {
+  volume = parseFloat(e.target.value);
+});
+
+tomatoCount.textContent = tomato;
+streakCount.textContent = streak;
+updateDisplay();
+renderCalendar();
+showBadge();
+// All your existing functions...
+
+showBadge();
+
+// 🧠 Quote Coach START
+const coachText = document.getElementById('coachText');
+
+const aiQuotes = [
+  "“Discipline is choosing between what you want now and what you want most.” – Abraham Lincoln",
+  "“What you know protects you. What we teach you advances you.” – ALA",
+  "“Start before you’re ready. Work until it’s done.”",
+  "“Success is scheduled. Not wished for.”",
+  "“The Alpha rises when others delay.”",
+  "“The 5-second rule: count backwards and launch.”",
+  "“Your calendar is your empire.”",
+  "“Finish one thing. Win one case. Take one step.”",
+  "“Your silence is strategy. Your time is currency.”",
+  "“The court won’t wait. Neither should you.”"
+];
+
+function updateCoach() {
+  const quote = aiQuotes[Math.floor(Math.random() * aiQuotes.length)];
+  coachText.textContent = quote;
+}
+
+setInterval(updateCoach, 25000); // every 25 seconds
+updateCoach(); // initial load
+// 🧠 Quote Coach END
+</script>
 </body>
 </html>
