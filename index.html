@@ -1,214 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0a0a23" />
+  <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TomʌɪDos – Legal Pomodoro</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>TomʌɪDos 🍅 – Legal Pomodoro App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-light: #f5f5f0;
+      --bg-dark: #1c1c1c;
+      --text-light: #222;
+      --text-dark: #f5f5f0;
+      --accent: #D64550;
+      --badge: #425b84;
+      --success: #4CAF50;
+      --card-bg-light: #fff;
+      --card-bg-dark: #2e2e2e;
+    }
+<script type="application/manifest+json">
+{
+  "name": "TomʌɪDos",
+  "short_name": "TomʌɪDos",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a23",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/590/590685.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+</script>
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log("Service Worker Registered ✅"))
+        .catch(err => console.error("Service Worker Failed ❌", err));
+    });
+  }
+</script>
+    <script>
+  const swCode = `
+    const CACHE_NAME = 'tomai-v1';
+    const urlsToCache = ['.'];
+
+    self.addEventListener('install', event => {
+      event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+      );
+    });
+
+    self.addEventListener('fetch', event => {
+      event.respondWith(
+        caches.match(event.request)
+          .then(response => response || fetch(event.request))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], { type: "application/javascript" });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl);
+</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  async function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("TomʌɪDos 🍅 – Focus Log Report", 20, 20);
+
+    const logs = JSON.parse(localStorage.getItem("focusLogs")) || [];
+    let y = 40;
+    logs.forEach((log, i) => {
+      doc.text(`${i + 1}. [${log.timestamp}] ${log.task}`, 20, y);
+      y += 10;
+    });
+
+    doc.save("tomai-focus-report.pdf");
+  }
+</script>
+<script>
+const quotes = [
+  "“The law is reason, free from passion.” – Aristotle",
+  "“Justice delayed is justice denied.” – William E. Gladstone",
+  "“A good lawyer knows the law; a great lawyer knows the judge.” – Legal Proverb",
+  "“Discipline is the bridge between goals and accomplishment.” – Jim Rohn",
+  "“Start where you are. Use what you have. Do what you can.” – Arthur Ashe",
+];
+
+function showQuote() {
+  const quoteBox = document.getElementById("aiQuoteCoach");
+  const streak = parseInt(localStorage.getItem("focusStreak") || "0");
+  if (streak > 0 && quoteBox) {
+    quoteBox.textContent = quotes[streak % quotes.length];
+  }
+}
+showQuote();
+</script>
     body {
       font-family: 'Inter', sans-serif;
-      background: #f9f9f4;
-      margin: 0; padding: 0;
-      color: #222;
+      margin: 0;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: background-color 0.4s, color 0.4s;
     }
+
+    body.dark {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
     header {
-      background: #1d3149;
+      background-color: #203040;
       color: white;
       padding: 2rem 1rem 1rem;
       text-align: center;
     }
+
     h1 {
-      font-size: 2.5rem;
-      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      margin-bottom: 0;
     }
+
     .timer {
       font-size: 4rem;
+      margin: 1.5rem 0;
       text-align: center;
-      margin: 1rem 0;
     }
-    .task-input, .controls, .log, .calendar {
-      text-align: center;
+
+    .task-input, .task-list, .controls, .log, .calendar, .footer-bar, .badge-shelf, .tracker {
+      max-width: 720px;
       margin: 1rem auto;
-      max-width: 700px;
+      text-align: center;
     }
-    input {
+
+    .task-input input {
       padding: 0.6rem;
       font-size: 1rem;
       width: 60%;
     }
-    .task-input button, .controls button {
-      margin: 0.5rem;
+
+    .task-input button {
       padding: 0.6rem 1rem;
-      background: #4CAF50;
+      margin-left: 0.4rem;
+    }
+
+    .task-item {
+      background: var(--card-bg-light);
+      margin: 0.3rem auto;
+      padding: 0.6rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    body.dark .task-item {
+      background: var(--card-bg-dark);
+    }
+.coach-box {
+  margin: 1rem auto 2rem;
+  max-width: 600px;
+  padding: 1rem 1.5rem;
+  font-style: italic;
+  font-size: 1rem;
+  border-left: 4px solid var(--accent);
+  background: #f1f1f1;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+body.dark .coach-box {
+  background: #333;
+  color: #fff;
+}   
+    .task-item.checked {
+      text-decoration: line-through;
+      background-color: var(--success);
+      color: white;
+    }
+
+    button {
+      background-color: var(--accent);
       color: white;
       border: none;
-      border-radius: 6px;
+      padding: 0.8rem 1.2rem;
+      margin: 0.4rem;
+      border-radius: 8px;
       cursor: pointer;
+      font-size: 1rem;
     }
-    .log {
-      background: #fff;
-      border-radius: 10px;
-      padding: 1rem;
-      box-shadow: 0 0 10px #ddd;
-    }
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-    .calendar-cell {
-      background: #eaeaea;
-      padding: 1rem 0;
-      border-radius: 6px;
-    }
-    .calendar-cell.active {
-      background: #4CAF50;
-      color: white;
-    }
+
     .footer-bar {
       position: sticky;
       bottom: 0;
+      background: #ffffffcc;
+      backdrop-filter: blur(6px);
       display: flex;
       justify-content: space-between;
-      background: #fff;
       padding: 0.5rem 1rem;
-      font-size: 0.9rem;
-      border-top: 1px solid #ccc;
     }
+
+    body.dark .footer-bar {
+      background: #2e2e2ecc;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+    }
+
+    .volume-slider {
+      width: 100px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      padding: 0.5rem;
+    }
+
+    .calendar-cell {
+      aspect-ratio: 1/1;
+      background: #ccc;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calendar-cell.active {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .badge-shelf {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.7rem;
+      margin-top: 1rem;
+    }
+
+    .badge {
+      background: var(--badge);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      animation: pulse 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    .tracker {
+      margin-top: 2rem;
+      font-size: 1rem;
+      background: #f0f0f0;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+
+    body.dark .tracker {
+      background: #333;
+    }
+     .coach-box {
+  padding: 0.75em 1.25em;
+  background: #f4f4f4;
+  border-left: 4px solid #333;
+  border-radius: 6px;
+  font-size: 0.95em;
+  max-width: 600px;
+  margin: 0 auto;
+}
+body.dark .coach-box {
+  background: #222;
+  color: #eee;
+  border-color: #fff;
+}                                         
   </style>
 </head>
 <body>
+    <div class="coach-box" id="coachBox">
+  <div class="coach-text" id="coachText">“The law is reason, free from passion.” – Aristotle</div>
+</div>
   <header>
     <h1>TomʌɪDos 🍅</h1>
-    <p>Elite Legal Focus Tracker – Track. Win. Repeat.</p>
+    <p><i>AWS Legal Focus Tracker – Track. Win. Repeat.</i></p>
   </header>
 
   <div class="timer" id="timer">25:00</div>
-
   <div class="task-input">
-    <input type="text" id="taskInput" placeholder="Enter focus task..." />
+    <input id="taskInput" placeholder="Enter your task..." />
     <button onclick="addTask()">Add Task</button>
   </div>
+<div id="aiQuoteCoach" class="coach-box" style="margin-top: 1em; font-style: italic;"></div>
+
+  <div class="task-list" id="taskList"></div>
 
   <div class="controls">
-    <button onclick="startTimer(25 * 60)">🍅 Start Focus</button>
-    <button onclick="startTimer(5 * 60)">🌿 Short Break</button>
-    <button onclick="startTimer(15 * 60)">🏝 Long Break</button>
-    <button onclick="resetTimer()">🔄 Reset</button>
+    <button onclick="startTimer('work')">🍅 Start Focus</button>
+    <button onclick="startTimer('short')">🌿 Short Break</button>
+    <button onclick="startTimer('long')">🌴 Long Break</button>
+    <button onclick="resetTimer()">Reset</button>
+    <button onclick="exportLogs()">📂 Export Logs</button>
     <button onclick="exportPDF()">📄 PDF Report</button>
   </div>
 
-  <div class="log" id="focusLogs">
+  <div class="log" id="log">
     <h3>📜 Focus Logs</h3>
   </div>
 
   <div class="calendar">
-    <h3>📅 Streak Calendar</h3>
+    <h3>Streak Calendar</h3>
     <div class="calendar-grid" id="calendarGrid"></div>
   </div>
 
-  <div class="footer-bar">
-    <span>🌍 Tomatoes: <span id="tomatoCount">0</span></span>
-    <span>🔥 Streak: <span id="streakCount">0</span></span>
-    <span>🏆 Title: <span id="titleLabel">Novice</span></span>
+  <div class="badge-shelf">
+    <h3 id="title">🎖️ Novice</h3>
+    <div>🍅 Tomatoes: <span id="tomatoCount">0</span></div>
+    <div>🔥 Streak: <span id="streakCount">0</span></div>
+    <div id="badges"></div>
   </div>
 
-  <script>
-    let timer;
-    let timeLeft = 25 * 60;
-    let tomatoes = 0;
-    let streak = 0;
+  <div class="footer-bar">
+    <button class="theme-toggle" onclick="toggleTheme()">🌗</button>
+    <input type="range" class="volume-slider" id="volumeControl" min="0" max="1" step="0.01" value="0.5">
+  </div>
+<!-- 🔊 Sound Elements -->
+<audio id="startSound" src="https://assets.mixkit.co/sfx/preview/mixkit-click-melodic-tone-1129.mp3"></audio>
+<audio id="endSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bell-notification-933.mp3"></audio>
+<audio id="checkSound" src="https://assets.mixkit.co/sfx/preview/mixkit-soft-click-1126.mp3"></audio>
+<audio id="badgeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-notification-wave-896.mp3"></audio>
+<audio id="themeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-239.mp3"></audio>
 
-    const timerEl = document.getElementById("timer");
-    const logEl = document.getElementById("focusLogs");
-    const tomatoEl = document.getElementById("tomatoCount");
-    const streakEl = document.getElementById("streakCount");
-    const titleEl = document.getElementById("titleLabel");
+<script>
+let timer = 1500;
+let interval;
+let mode = 'work';
+let streak = parseInt(localStorage.getItem('streak')) || 0;
+let tomato = parseInt(localStorage.getItem('tomato')) || 0;
+let volume = 0.5;
+let pomodoroCycle = 0;
 
-    function updateTimerDisplay() {
-      const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
-      const secs = String(timeLeft % 60).padStart(2, '0');
-      timerEl.textContent = `${mins}:${secs}`;
+const timerEl = document.getElementById('timer');
+const volumeControl = document.getElementById('volumeControl');
+const logEl = document.getElementById('log');
+const calendarGrid = document.getElementById('calendarGrid');
+const badgesEl = document.getElementById('badges');
+const titleEl = document.getElementById('title');
+const tomatoCount = document.getElementById('tomatoCount');
+const streakCount = document.getElementById('streakCount');
+
+function updateDisplay() {
+  const m = Math.floor(timer / 60).toString().padStart(2, '0');
+  const s = (timer % 60).toString().padStart(2, '0');
+  timerEl.textContent = `${m}:${s}`;
+}
+
+function playSound(id) {
+  const audio = document.getElementById(id);
+  audio.volume = volume;
+  audio.currentTime = 0;
+  audio.play();
+}
+
+function startTimer(selected) {
+  clearInterval(interval);
+  mode = selected;
+  if (selected === 'work') timer = 1500;
+  if (selected === 'short') timer = 300;
+  if (selected === 'long') timer = 900;
+
+  playSound('startSound');
+  interval = setInterval(() => {
+    timer--;
+    updateDisplay();
+    if (timer <= 0) {
+      clearInterval(interval);
+      playSound('endSound');
+      completeSession();
     }
+  }, 1000);
+  updateDisplay();
+}
 
-    function startTimer(seconds) {
-      clearInterval(timer);
-      timeLeft = seconds;
-      updateTimerDisplay();
-      timer = setInterval(() => {
-        timeLeft--;
-        updateTimerDisplay();
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          onTimerComplete();
-        }
-      }, 1000);
-    }
-
-    function resetTimer() {
-      clearInterval(timer);
-      timeLeft = 25 * 60;
-      updateTimerDisplay();
-    }
-
-    function onTimerComplete() {
-      const entry = document.createElement("p");
-      entry.textContent = `✅ Focus session complete at ${new Date().toLocaleTimeString()}`;
-      logEl.appendChild(entry);
-      tomatoes++;
-      streak++;
-      updateProgress();
-    }
-
-    function updateProgress() {
-      tomatoEl.textContent = tomatoes;
-      streakEl.textContent = streak;
-      titleEl.textContent = streak >= 5 ? "Silent Assassin" : "Novice";
-      updateCalendar();
-    }
-
-    function addTask() {
-      const input = document.getElementById("taskInput");
-      if (input.value.trim()) {
-        const entry = document.createElement("p");
-        entry.textContent = `🔹 ${input.value.trim()}`;
-        logEl.appendChild(entry);
-        input.value = "";
-      }
-    }
-
-    function updateCalendar() {
-      const grid = document.getElementById("calendarGrid");
-      grid.innerHTML = "";
-      const today = new Date();
-      for (let i = -3; i < 4; i++) {
-        const day = new Date();
-        day.setDate(today.getDate() + i);
-        const cell = document.createElement("div");
-        cell.className = "calendar-cell";
-        cell.textContent = day.getDate();
-        if (i === 0) cell.classList.add("active");
-        grid.appendChild(cell);
-      }
-    }
-
-    function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.text("TomʌɪDos – Focus Logs", 20, 20);
-      let y = 30;
-      [...logEl.querySelectorAll("p")].forEach((p, idx) => {
-        doc.text(`${idx + 1}. ${p.textContent}`, 20, y);
-        y += 10;
-      });
-      doc.save("tomaiDos_focus_log.pdf");
-    }
-
-    updateTimerDisplay();
+function completeSession() {
+  if (mode === 'work') {
+    tomato++;
+    pomodoroCycle++;
+    streak++;
+    localStorage.setItem('streak', streak);
+    localStorage.setItem('tomato', tomato);
+    streakCount.textContent = streak;
+    tomatoCount.textContent = tomato;
+    showBadge();
     updateCalendar();
-  </script>
-</body>
-</html>
+    logEntry("🍅 Pomodoro Complete");
+    if (pomodoroCycle % 4 === 0) startTimer('long');
+    else startTimer('short');
+  } else {
+    logEntry("Break Complete");
+  }
+}
+
+function resetTimer() {
+  clearInterval(interval);
+  timer = 1500;
+  updateDisplay();
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  playSound('themeSound');
+}
+
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const task = input.value.trim();
+  if (!task) return;
+  const div = document.createElement('div');
+  div.className = 'task-item';
+  div.textContent = task;
+  div.onclick = () => {
+    div.classList.toggle('checked');
+    playSound('checkSound');
+  };
+  document.getElementById('taskList').appendChild(div);
+  input.value = '';
+}
+
+function logEntry(text) {
+  const el = document.createElement('div');
+  el.textContent = `🕒 ${new Date().toLocaleTimeString()} – ${text}`;
+  logEl.appendChild(el);
+}
+
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+  doc.text("TomʌɪDos 🍅 Focus Report", 20, y);
+  [...logEl.children].forEach(child => {
+    y += 10;
+    doc.text(child.textContent, 20, y);
+  });
+  doc.save("TomʌɪDos_Report.pdf");
+}
+
+function exportLogs() {
+  const data = [...logEl.children].map(div => div.textContent).join("\n");
+  const blob = new Blob([data], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "TomʌɪDos_Logs.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function updateCalendar() {
+  const day = new Date().getDay();
+  const cells = document.querySelectorAll('.calendar-cell');
+  cells.forEach((c, i) => {
+    c.classList.toggle('active', i === day);
+  });
+}
+
+function renderCalendar() {
+  for (let i = 0; i < 7; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-cell';
+    calendarGrid.appendChild(cell);
+  }
+  updateCalendar();
+}
+
+function showBadge() {
+  badgesEl.innerHTML = '';
+  if (tomato >= 10) titleEl.textContent = '🎖️ Grand Counsel';
+  else if (tomato >= 5) titleEl.textContent = '🎖️ Associate Partner';
+  else titleEl.textContent = '🎖️ Novice';
+
+  if (streak >= 3) {
+    const b = document.createElement('div');
+    b.className = 'badge';
+    b.textContent = '💼 3-Streak Achiever';
+    badgesEl.appendChild(b);
+    playSound('badgeSound');
+  }
+}
+
+volumeControl.addEventListener('input', e => {
+  volume = parseFloat(e.target.value);
+});
+
+tomatoCount.textContent = tomato;
+streakCount.textContent = streak;
+updateDisplay();
+renderCalendar();
+showBadge();
+</script>
+  const coachText = document.getElementById('coachText');
+
+const aiQuotes = [
+  "“Discipline is choosing between what you want now and what you want most.” – Abraham Lincoln",
+  "“What you know protects you. What we teach you advances you.” – ALA",
+  "“Start before you’re ready. Work until it’s done.”",
+  "“Success is scheduled. Not wished for.”",
+  "“The Alpha rises when others delay.”",
+  "“The 5-second rule: count backwards and launch.”",
+  "“Your calendar is your empire.”",
+  "“Finish one thing. Win one case. Take one step.”",
+  "“Your silence is strategy. Your time is currency.”",
+  "“Old money doesn’t chase. It plans.”",
+  "“The court won’t wait. Neither should you.”"
+];
+
+function updateCoach() {
+  const quote = aiQuotes[Math.floor(Math.random() * aiQuotes.length)];
+  coachText.textContent = quote;
+}
+
+setInterval(updateCoach, 25000); // Updates every 25 seconds
+updateCoach(); // Initial load
+
