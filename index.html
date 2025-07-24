@@ -5,7 +5,7 @@
   <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TomʌɪDos 🍅 – Legal Pomodoro App</title>
+  <title>TomʌɪDos 🍅 – AWS Legal Pomodoro App</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -84,24 +84,6 @@
 
     doc.save("tomai-focus-report.pdf");
   }
-</script>
-<script>
-const quotes = [
-  "“The law is reason, free from passion.” – Aristotle",
-  "“Justice delayed is justice denied.” – William E. Gladstone",
-  "“A good lawyer knows the law; a great lawyer knows the judge.” – Legal Proverb",
-  "“Discipline is the bridge between goals and accomplishment.” – Jim Rohn",
-  "“Start where you are. Use what you have. Do what you can.” – Arthur Ashe",
-];
-
-function showQuote() {
-  const quoteBox = document.getElementById("aiQuoteCoach");
-  const streak = parseInt(localStorage.getItem("focusStreak") || "0");
-  if (streak > 0 && quoteBox) {
-    quoteBox.textContent = quotes[streak % quotes.length];
-  }
-}
-showQuote();
 </script>
     body {
       font-family: 'Inter', sans-serif;
@@ -290,6 +272,28 @@ body.dark .coach-box {
 }                                         
   </style>
 </head>
+  <script>
+  const quotes = [
+    "“The law is reason, free from passion.” – Aristotle",
+    "“A lawyer with a briefcase can steal more than a thousand men with guns.” – Mario Puzo",
+    "“Injustice anywhere is a threat to justice everywhere.” – Martin Luther King Jr.",
+    "“Justice delayed is justice denied.” – William Gladstone",
+    "“The power of the lawyer is in the uncertainty of the law.” – Jeremy Bentham",
+    "“He who opens a school door, closes a prison.” – Victor Hugo",
+    "“Laws are spider webs through which the big flies pass and the little ones get caught.” – Balzac",
+    "“A lawyer’s time and advice are his stock in trade.” – Abraham Lincoln"
+  ];
+
+  function rotateQuote() {
+    const box = document.getElementById("coachText");
+    const index = Math.floor(Math.random() * quotes.length);
+    box.textContent = quotes[index];
+  }
+    rotateQuote();
+  // Change quote every 2 Pomodoros or every long break
+  setInterval(rotateQuote, 1000 * 60 * 25 * 2);
+</script>
+
 <body>
     <div class="coach-box" id="coachBox">
   <div class="coach-text" id="coachText">“The law is reason, free from passion.” – Aristotle</div>
@@ -510,8 +514,12 @@ streakCount.textContent = streak;
 updateDisplay();
 renderCalendar();
 showBadge();
-</script>
-  const coachText = document.getElementById('coachText');
+// All your existing functions...
+
+showBadge();
+
+// 🧠 Quote Coach START
+const coachText = document.getElementById('coachText');
 
 const aiQuotes = [
   "“Discipline is choosing between what you want now and what you want most.” – Abraham Lincoln",
@@ -523,7 +531,6 @@ const aiQuotes = [
   "“Your calendar is your empire.”",
   "“Finish one thing. Win one case. Take one step.”",
   "“Your silence is strategy. Your time is currency.”",
-  "“Old money doesn’t chase. It plans.”",
   "“The court won’t wait. Neither should you.”"
 ];
 
@@ -532,6 +539,7 @@ function updateCoach() {
   coachText.textContent = quote;
 }
 
-setInterval(updateCoach, 25000); // Updates every 25 seconds
-updateCoach(); // Initial load
-
+setInterval(updateCoach, 25000); // every 25 seconds
+updateCoach(); // initial load
+// 🧠 Quote Coach END
+</script>
